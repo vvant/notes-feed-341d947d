@@ -1,0 +1,43 @@
+name: build
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: feed
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: posts.json
+          key: posts-${{ github.run_id }}
+          restore-keys: posts-
+
+      - name: Build feed
+        env:
+          PROFILE: ${{ secrets.PROFILE }}
+          AUTHOR: ${{ secrets.AUTHOR }}
+          FEED_URL: https://vvant.github.io/notes-feed-341d947d/feed.xml
+        run: python3 build_feed.py
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - uses: actions/deploy-pages@v4
